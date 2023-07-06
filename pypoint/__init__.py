@@ -87,7 +87,7 @@ class PointSession(AsyncOAuth2Client):  # pylint: disable=too-many-instance-attr
         session,
         client_id,
         client_secret,
-        redirect_uri=environment.redirectUri,
+        redirect_uri=None,
         token=None,
         token_saver=None,
     ):
