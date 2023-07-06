@@ -96,7 +96,7 @@ class PointSession(AsyncOAuth2Client):  # pylint: disable=too-many-instance-attr
             client_id,
             client_secret,
             auto_refresh_url=MINUT_TOKEN_URL,
-            redirect_uri=redirect_uri,
+            redirect_uri="http://0.0.0.0:8123/api/minut",
             token_endpoint_auth_method="client_secret_basic",
             token=token,
         )
