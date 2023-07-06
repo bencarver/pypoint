@@ -1,2 +1,2 @@
-authlib
+authlib<1
 httpx>=0.19.0,<1
