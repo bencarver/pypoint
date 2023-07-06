@@ -12,7 +12,7 @@ setuptools.setup(
     description="API for Minut Point",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/fredrike/pypoint",
+    url="https://github.com/bencarver/pypoint",
     packages=["pypoint"],
     classifiers=[
         "Programming Language :: Python :: 3",
