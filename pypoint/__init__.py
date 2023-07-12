@@ -78,11 +78,10 @@ EVENTS = {
     ),
 }
 
-
-class PointSession(AsyncOAuth2Client):  # pylint: disable=too-many-instance-attributes
+class PointSession(AsyncOAuth2Client):
     """Point Session class used by the devices."""
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         session,
         client_id,
@@ -95,10 +94,11 @@ class PointSession(AsyncOAuth2Client):  # pylint: disable=too-many-instance-attr
         super().__init__(
             client_id,
             client_secret,
-            auto_refresh_url=MINUT_TOKEN_URL,
-            redirect_uri="https://localhost:8123/api/minut",
-            token_endpoint_auth_method="client_secret_basic",
+            token_endpoint=MINUT_TOKEN_URL,
             token=token,
+            token_placement="header",
+            token_type="Bearer",
+            token_saver=token_saver,
         )
         self.session = session
         self._user = None
@@ -106,38 +106,28 @@ class PointSession(AsyncOAuth2Client):  # pylint: disable=too-many-instance-attr
         self._device_state = {}
         self._homes = {}
         self._lock = RLock()
-        self.update_token = token_saver
         self.metadata = {"token_endpoint": MINUT_TOKEN_URL}
 
-    @property
-    def get_authorization_url(self):
-        """Return the authorization url."""
-        return self.create_authorization_url(MINUT_AUTH_URL)[0]
-
-    @property
-    def is_authorized(self):
-        """Return authorized status."""
-        return bool(self.token["access_token"])
-
     async def get_access_token(self, code):
-        """Get new access token."""
+        """Get new access token using the authorization code."""
         try:
-            await super().fetch_token(
+            token = await self.fetch_token(
                 MINUT_TOKEN_URL,
-                client_id=self.client_id,
-                client_secret=self.client_secret,
+                authorization_response=code,
                 grant_type="authorization_code",
-                code=code,
+                include_client_id=True,
+                code_verifier=None,
             )
+            self.token = token
+            return token
         except MissingTokenException as error:
             _LOGGER.warning("Token issues: %s", error)
-        return self.token
 
     async def _request(self, url, request_type="GET", **params):
         """Send a request to the Minut Point API."""
         try:
             _LOGGER.debug("Request %s %s", url, params)
-            response = await self.request(
+            response = await self.session.request(
                 request_type, url, timeout=TIMEOUT.seconds, **params
             )
             response.raise_for_status()
@@ -182,7 +172,7 @@ class PointSession(AsyncOAuth2Client):  # pylint: disable=too-many-instance-attr
         return res.get("values")[-1].get("value")
 
     async def user(self):
-        """Update and returns the user data."""
+        """Update and return the user data."""
         return await self._request(f"{MINUT_USERS_URL}/{self.token['user_id']}")
 
     async def _register_webhook(self, webhook_url, events):
@@ -206,7 +196,7 @@ class PointSession(AsyncOAuth2Client):  # pylint: disable=too-many-instance-attr
             )
 
     async def update_webhook(self, webhook_url, webhook_id, events=None):
-        """Register webhook (if it doesn't exit)."""
+        """Register webhook (if it doesn't exist)."""
         hooks = (await self._request(MINUT_WEBHOOKS_URL, request_type="GET"))["hooks"]
         try:
             self._webhook = next(hook for hook in hooks if hook["url"] == webhook_url)
@@ -224,7 +214,7 @@ class PointSession(AsyncOAuth2Client):  # pylint: disable=too-many-instance-attr
         return self._webhook.get("hook_id")
 
     async def update(self):
-        """Update all devices from server."""
+        """Update all devices from the server."""
         with self._lock:
             devices = await self._request_devices(MINUT_DEVICES_URL, "devices")
 
@@ -256,7 +246,7 @@ class PointSession(AsyncOAuth2Client):  # pylint: disable=too-many-instance-attr
         }
 
     async def _set_alarm(self, status, home_id):
-        """Set alarm satus."""
+        """Set alarm status."""
         response = await self._request(
             f"{MINUT_HOMES_URL}/{home_id}",
             request_type="PUT",
@@ -290,7 +280,7 @@ class PointSession(AsyncOAuth2Client):  # pylint: disable=too-many-instance-attr
             return self._device_state.keys()
 
     def device_raw(self, device_id):
-        """Return the raw representaion of a device."""
+        """Return the raw representation of a device."""
         with self._lock:
             return self._device_state.get(device_id)
 
@@ -304,7 +294,7 @@ class Device:
         self._device_id = device_id
 
     def __str__(self):
-        """Representaion of device."""
+        """Representation of device."""
         return f"Device #{self.device_id} {self.name or ''}"
 
     async def sensor(self, sensor_type):
@@ -319,32 +309,32 @@ class Device:
 
     @property
     def ongoing_events(self):
-        """Return ongoing events of device."""
+        """Return ongoing events of the device."""
         return self.device["ongoing_events"]
 
     @property
     def device_id(self):
-        """Id of device."""
+        """Id of the device."""
         return self._device_id
 
     @property
     def last_update(self):
-        """Last update from device."""
+        """Last update from the device."""
         return self.device["last_heard_from_at"]
 
     @property
     def name(self):
-        """Name of device."""
+        """Name of the device."""
         return self.device.get("description")
 
     @property
     def battery_level(self):
-        """Battery level of device."""
+        """Battery level of the device."""
         return self.device["battery"]["percent"]
 
     @property
     def device_info(self):
-        """Info about device."""
+        """Info about the device."""
         return {
             "connections": {("mac", self.device["device_mac"])},
             "identifieres": self.device["device_id"],
@@ -356,7 +346,7 @@ class Device:
 
     @property
     def device_status(self):
-        """Status of device."""
+        """Status of the device."""
         return {
             "active": self.device["active"],
             "offline": self.device["offline"],
