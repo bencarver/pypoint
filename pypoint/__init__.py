@@ -107,7 +107,16 @@ class PointSession(AsyncOAuth2Client):
         self._homes = {}
         self._lock = RLock()
         self.metadata = {"token_endpoint": MINUT_TOKEN_URL}
-
+	
+    @property	
+    def get_authorization_url(self):	
+        """Return the authorization url."""	
+        return self.create_authorization_url(MINUT_AUTH_URL)[0]	
+    @property	
+    def is_authorized(self):	
+        """Return authorized status."""	
+        return bool(self.token["access_token"])
+    
     async def get_access_token(self, code):
         """Get new access token using the authorization code."""
         try:
