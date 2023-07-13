@@ -11,7 +11,7 @@ from httpx import HTTPError, NetworkError, RequestError, TimeoutException
 _LOGGER = logging.getLogger(__name__)
 
 MINUT_API_URL = "https://api.minut.com"
-MINUT_AUTH_URL = MINUT_API_URL + "/v5/oauth/authorize"
+MINUT_AUTH_URL = MINUT_API_URL + "/v8/oauth/authorize"
 MINUT_DEVICES_URL = MINUT_API_URL + "/v5/devices"
 MINUT_USERS_URL = MINUT_API_URL + "/v5/users"
 MINUT_TOKEN_URL = MINUT_API_URL + "/v5/oauth/token"
@@ -86,7 +86,7 @@ class PointSession(AsyncOAuth2Client):
         session,
         client_id,
         client_secret,
-        redirect_uri=None,
+        redirect_uri="https://localhost:8123/api/minut",
         token=None,
         token_saver=None,
     ):
