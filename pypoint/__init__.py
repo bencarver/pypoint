@@ -86,7 +86,7 @@ class PointSession(AsyncOAuth2Client):
         session,
         client_id,
         client_secret,
-        redirect_uri="https://localhost:8123/api/minut",
+        redirect_uri=None,
         token=None,
         token_saver=None,
     ):
@@ -99,6 +99,7 @@ class PointSession(AsyncOAuth2Client):
             token_placement="header",
             token_type="Bearer",
             token_saver=token_saver,
+	    redirect_uri=redirect_uri
         )
         self.session = session
         self._user = None
