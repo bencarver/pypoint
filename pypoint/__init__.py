@@ -7,6 +7,7 @@ from threading import RLock
 from authlib.integrations.httpx_client import AsyncOAuth2Client
 from authlib.oauth2.rfc6749.errors import MissingTokenException
 from httpx import HTTPError, NetworkError, RequestError, TimeoutException
+import base64
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -118,20 +119,22 @@ class PointSession(AsyncOAuth2Client):
         """Return authorized status."""	
         return bool(self.token["access_token"])
     
-    async def get_access_token(self, code):
-        """Get new access token using the authorization code."""
-        try:
-            token = await self.fetch_token(
-                MINUT_TOKEN_URL,
-                authorization_response=code,
-                grant_type="authorization_code",
-                include_client_id=True,
-                code_verifier=None,
-            )
-            self.token = token
-            return token
-        except MissingTokenException as error:
-            _LOGGER.warning("Token issues: %s", error)
+    async def get_access_token(self):
+        auth_header = base64.b64encode(f'{self.client_id}:{self.client_secret}'.encode('utf-8')).decode('utf-8')
+        headers = {
+            'Authorization': f'Basic {auth_header}',
+            'Content-Type': 'application/x-www-form-urlencoded'
+        }
+        data = {
+            'grant_type': 'client_credentials',
+            'scope': self.scope
+        }
+        async with httpx.AsyncClient() as client:
+            response = await client.post(self.token_url, headers=headers, data=data)
+            if response.status_code == 200:
+                return response.json().get('access_token')
+            else:
+                raise Exception('Failed to obtain access token')
 
     async def _request(self, url, request_type="GET", **params):
         """Send a request to the Minut Point API."""
