@@ -12,7 +12,7 @@ import base64
 _LOGGER = logging.getLogger(__name__)
 
 MINUT_API_URL = "https://api.minut.com"
-MINUT_AUTH_URL = MINUT_API_URL + "/v8/oauth/authorize"
+MINUT_AUTH_URL = MINUT_API_URL + "/v5/oauth/authorize"
 MINUT_DEVICES_URL = MINUT_API_URL + "/v5/devices"
 MINUT_USERS_URL = MINUT_API_URL + "/v5/users"
 MINUT_TOKEN_URL = MINUT_API_URL + "/v5/oauth/token"
