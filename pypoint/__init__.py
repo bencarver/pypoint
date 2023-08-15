@@ -4,7 +4,7 @@ from datetime import timedelta
 import logging
 from threading import RLock
 
-from authlib.integrations.httpx_client import AsyncOAuth2Client
+from requests_oauth2client import OAuth2Client
 from authlib.oauth2.rfc6749.errors import MissingTokenException
 from httpx import HTTPError, NetworkError, RequestError, TimeoutException
 import base64
@@ -12,10 +12,10 @@ import base64
 _LOGGER = logging.getLogger(__name__)
 
 MINUT_API_URL = "https://api.minut.com"
-MINUT_AUTH_URL = MINUT_API_URL + "/v5/oauth/authorize"
+MINUT_AUTH_URL = MINUT_API_URL + "/v8/oauth/authorize"
 MINUT_DEVICES_URL = MINUT_API_URL + "/v5/devices"
 MINUT_USERS_URL = MINUT_API_URL + "/v5/users"
-MINUT_TOKEN_URL = MINUT_API_URL + "/v5/oauth/token"
+MINUT_TOKEN_URL = MINUT_API_URL + "/v8/oauth/token"
 MINUT_WEBHOOKS_URL = MINUT_API_URL + "/v5/webhooks"
 MINUT_HOMES_URL = MINUT_API_URL + "/v5/homes"
 
@@ -79,7 +79,7 @@ EVENTS = {
     ),
 }
 
-class PointSession(AsyncOAuth2Client):
+class PointSession(OAuth2Client):
     """Point Session class used by the devices."""
 
     def __init__(
@@ -93,15 +93,9 @@ class PointSession(AsyncOAuth2Client):
     ):
         """Initialize the Minut Point Session object."""
         super().__init__(
-            client_id,
-            client_secret,
             token_endpoint=MINUT_TOKEN_URL,
-            token=token,
-            token_placement="header",
-            token_type="Bearer",
-            token_saver=token_saver,
-	    redirect_uri=redirect_uri
-        )
+			auth=(client_id, client_secret),
+		)
         self.session = session
         self._user = None
         self._webhook = {}
@@ -120,21 +114,7 @@ class PointSession(AsyncOAuth2Client):
         return bool(self.token["access_token"])
     
     async def get_access_token(self):
-        auth_header = base64.b64encode(f'{self.client_id}:{self.client_secret}'.encode('utf-8')).decode('utf-8')
-        headers = {
-            'Authorization': f'Basic {auth_header}',
-            'Content-Type': 'application/x-www-form-urlencoded'
-        }
-        data = {
-            'grant_type': 'client_credentials',
-            'scope': self.scope
-        }
-        async with httpx.AsyncClient() as client:
-            response = await client.post(self.token_url, headers=headers, data=data)
-            if response.status_code == 200:
-                return response.json().get('access_token')
-            else:
-                raise Exception('Failed to obtain access token')
+        return self.client_credentials()
 
     async def _request(self, url, request_type="GET", **params):
         """Send a request to the Minut Point API."""
