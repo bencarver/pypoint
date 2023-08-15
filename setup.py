@@ -21,6 +21,7 @@ setuptools.setup(
     ],
     install_requires=[
         "authlib",
-        "requests"
+        "requests",
+        "cryptography==41.0.1"
     ],
 )
