@@ -87,7 +87,6 @@ class PointSession(AsyncOAuth2Client):  # pylint: disable=too-many-instance-attr
         session,
         client_id,
         client_secret,
-        redirect_uri=None,
         token=None,
         token_saver=None,
     ):
@@ -119,15 +118,14 @@ class PointSession(AsyncOAuth2Client):  # pylint: disable=too-many-instance-attr
         """Return authorized status."""
         return bool(self.token["access_token"])
 
-    async def get_access_token(self, code):
-        """Get new access token."""
+    async def get_access_token(self):
+        """Get new access token using client credentials."""
         try:
             await super().fetch_token(
                 MINUT_TOKEN_URL,
                 client_id=self.client_id,
                 client_secret=self.client_secret,
-                grant_type="authorization_code",
-                code=code,
+                grant_type="client_credentials",  # Change grant type to client_credentials
             )
         except MissingTokenException as error:
             _LOGGER.warning("Token issues: %s", error)
